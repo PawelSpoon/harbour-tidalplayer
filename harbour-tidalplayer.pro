@@ -56,7 +56,3 @@ typing.path  = $$OUT_PWD/python/typing_extensions
 
 dateutil.files = $$files(external/dateutil-2.8.2/dateutil/*.py)
 dateutil.path  = $$OUT_PWD/python/dateutil
-
-#libs.path = /usr/share/$${TARGET}
-#libs.files = external
-#INSTALLS += libs
