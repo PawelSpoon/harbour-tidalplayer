@@ -11,7 +11,9 @@ Item {
     readonly property int typeAlbum: 2
     readonly property int typeArtist: 3
     readonly property int typePlaylist: 4
-    readonly property int typeVideo: 5
+    readonly property int typeMix: 5    
+    readonly property int typeVideo: 6 //5
+
 
     SilicaFlickable {
         anchors.fill: parent

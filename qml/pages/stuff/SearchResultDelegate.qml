@@ -77,7 +77,8 @@ ListItem {
                 case 3: return "image://theme/icon-m-media-artists"
                 case 2: return "image://theme/icon-m-media-albums"
                 case 4: return "image://theme/icon-m-media-playlists"
-                case 5: return "image://theme/icon-m-video"
+                case 5: return "image://there/icon-m-media-playlists" //todo: mix
+                case 6: return "image://theme/icon-m-video"
                 default: return ""
                 }
             }

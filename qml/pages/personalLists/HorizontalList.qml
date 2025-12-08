@@ -52,7 +52,33 @@ SilicaListView {
         //positionViewAtBeginning()
     }
 
+    // dictionary of all loaded items to prevent double loading on re-init session
+    // i assume that using the cache should be also fine
+    property var _index : ({})
+
     function addItem(item) {
+
+        var itemId
+        switch (item.type) {
+            case typeArtist: itemId = item.artistid; break
+            case typeAlbum: itemId = item.albumid; break
+            case typeTrack: itemId = item.trackid; break
+            case typePlaylist: itemId = item.playlistid; break
+            case typeMix: itemId = item.mixid; break
+            case typeVideo: itemId = item.videoid; break
+            default: {
+                console.log('####: ' + item.title + 'type: ' + item.type)
+                itemId = item.title
+            }
+        }
+
+        var key = item.type + ":" + itemId
+
+        if (_index[key]) {
+            return
+        }
+
+        _index[key] = true        
         model.append(item)
         _allItems.push(item)
     }
@@ -359,7 +385,7 @@ SilicaListView {
                                 case typeArtist: id = model.artistid; break
                                 case typePlaylist: id = model.playlistid; break
                                 case typeMix: id = model.mixid; break
-                                default: id = model.trackid || model.albumid || model.artistid || model.playlistid || model.mixid
+                                default: id = model.title
                             }
                             
                             // Debug output for mix issues
@@ -388,6 +414,7 @@ SilicaListView {
                                 case typeArtist: return "artist"
                                 case typePlaylist: return "playlist"
                                 case typeMix: return "mix"
+                                case typeVideo: return "video"
                                 default: return "unknown"
                             }
                         }

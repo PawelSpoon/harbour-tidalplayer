@@ -281,6 +281,7 @@ Item {
             active: (type==="current" && editMode )? true:false
             handleMove: false // We handle the move ourselves
             property int dragStartIndex : -1
+            // parent: parent // does not prevent [W] unknown:17 - file:///usr/share/harbour-tidalplayer/qml/modules/Opal/DragDrop/DragHandle.qml:17: TypeError: Cannot read property of nu
 
             onItemMoved: function(from, to) {
                 console.log("itemMoved - from " + from + " to " + to + ", dragStartIndex= " + dragStartIndex)

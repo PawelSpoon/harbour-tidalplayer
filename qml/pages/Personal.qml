@@ -35,14 +35,6 @@ Item {
                   anchors.fill: parent
                   onClicked: filterRecentlyPlayed.visible = ! filterRecentlyPlayed.visible
                 }
-                // does not work as expected, it would also need to increase height of SessionHeader
-                /*SearchField {
-                    id: filterRecentlyPlayed
-                    labelVisible: false
-                    visible: false
-                    anchors.margins: Theme.paddingMedium
-                    anchors.top: sectionHeader.bottom
-                }*/
             }
             SearchField {
                 id: filterRecentlyPlayed
@@ -220,7 +212,7 @@ Item {
 
         }            
 
-/*
+/*  further possible sections
 
     def getPageListeningHistorypage(self):
         return self.session.page.get("pages/HISTORY_MIXES/view-all?")
