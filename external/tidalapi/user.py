@@ -564,7 +564,7 @@ class Favorites:
 
     def artists(
         self,
-        limit: int = 50,
+        limit: int = 500,
         offset: int = 0,
         order: Optional[ArtistOrder] = None,
         order_direction: Optional[OrderDirection] = None,
