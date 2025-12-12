@@ -351,8 +351,8 @@ Item {
             // Ensure drag handle is visible and properly configured
             enableDefaultGrabHandle: type === "current" && editMode
 
-            leftItem :
-                Image {
+            // Cover image
+            leftItem: Image {
                 id: coverImage
                 width: listEntry.highlighted ? Theme.itemSizeExtraLarge : Theme.itemSizeMedium
                 height: width
@@ -361,17 +361,17 @@ Item {
                 asynchronous: true
 
                 Behavior on width { NumberAnimation { duration: 150 } }
-                }
+            }
 
-            rightItem:
-                   Label {
+            // Right-side playback arrow
+            rightItem: Label {
                     visible: listEntry.highlighted
                     text: "▶"
                     color: selectedTextColor
                     font.pixelSize: root.selectedFontSize
                     width: visible ? implicitWidth : 0
                     verticalAlignment: Text.AlignVCenter
-                }
+            }
 
             textLabel.palette {
                 // just as an example
@@ -382,12 +382,49 @@ Item {
             textLabel.highlighted: isItemSelected(model.index)
 
             text: model.title
-            description: { model.artist + " • " +
+            description: { 
+                model.artist + " • " +
                 ((model.duration > 3599)
                          ? Format.formatDuration(model.duration, Formatter.DurationLong)
                          : Format.formatDuration(model.duration, Formatter.DurationShort))
             }
 
+            // ----------------------------
+            // Native Sailfish remorse feature
+            // ----------------------------
+            RemorseItem {
+                id: remorse
+                anchors.fill: parent
+            }
+
+            // ------------------------------------------
+            // SWIPE LEFT TO DELETE (only in edit mode)
+            // ------------------------------------------
+            SilicaFlickable {
+                id: swipeDelete
+                anchors.fill: parent
+                flickableDirection: Flickable.HorizontalFlick
+                interactive: editMode && !dragActive
+
+                contentWidth: width * 2
+                contentHeight: height
+
+                onMovementEnded: {
+                    if (contentX > width * 0.25) {
+                        remorse.execute(listEntry, qsTr("Deleting"), function() {
+                            var trackId = playlistManager.requestPlaylistItem(model.index)
+                            playlistManager.removeTrack(trackId, true)
+                            listModel.remove(model.index)
+                            root.filteredCount = Math.max(0, root.filteredCount - 1)
+                        }, Theme.remorseTimeout)
+                    }
+                    contentX = 0
+                }
+            }
+
+            // ----------------------------
+            // Click to play
+            // ----------------------------
             onClicked: {
                 // dont play in edit mode
                 if (editMode) return
@@ -406,137 +443,6 @@ Item {
                     // Smooth delay to let track change be visible first
                     autoClearTimer.start()
                 }
-            }
-
-            // Swipe-to-delete handler with remorse (only in editMode)
-            Item {
-                id: swipeDeleteContainer
-                anchors.fill: parent
-                property bool showDeleteButton: false
-                property int timeLeft: 3000  // Countdown in milliseconds
-
-                // Timer for remorse/undo
-                Timer {
-                    id: remorseTimer
-                    interval: 100  // Update countdown every 100ms
-                    repeat: true
-                    onTriggered: {
-                        swipeDeleteContainer.timeLeft -= interval
-                        if (swipeDeleteContainer.timeLeft <= 0) {
-                            // Actually remove the track after timeout
-                            var trackId = playlistManager.requestPlaylistItem(model.index)
-                            console.log("Remorse timeout: removing track", trackId)
-                                // Remove silently (don't emit listChanged) and update view directly
-                                playlistManager.removeTrack(trackId, true)
-                                // Keep playlistManager.currentIndex in sync with view
-                                root.currentIndex = playlistManager.currentIndex
-                                // Remove visual item from ListModel
-                                if (model && typeof model.index !== 'undefined') {
-                                    listModel.remove(model.index)
-                                }
-                                root.filteredCount = Math.max(0, root.filteredCount - 1)
-                                swipeDeleteContainer.showDeleteButton = false
-                                stop()
-                        }
-                    }
-                }
-
-                // Remorse overlay with delete button (anchored to the right of cover image)
-                Rectangle {
-                    id: deleteButtonOverlay
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    anchors.left: parent.left
-                    anchors.leftMargin: listEntry.leftItem.width
-                    anchors.right: parent.right
-                    color: Theme.rgba(Theme.highlightBackgroundColor, 0.9)
-                    visible: swipeDeleteContainer.showDeleteButton
-                    opacity: visible ? 1.0 : 0.0
-                    z: 10
-
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 200
-                            easing.type: Easing.InOutQuad
-                        }
-                    }
-
-                    Row {
-                        anchors.fill: parent
-                        anchors.margins: Theme.paddingMedium
-                        spacing: Theme.paddingMedium
-                        layoutDirection: Qt.RightToLeft
-
-                        // Cancel button
-                        Button {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: qsTr("Cancel")
-                            preferredWidth: Theme.buttonWidthSmall
-                            onClicked: {
-                                console.log("Delete cancelled")
-                                swipeDeleteContainer.showDeleteButton = false
-                                remorseTimer.stop()
-                                swipeDeleteContainer.timeLeft = 3000  // Reset timer
-                            }
-                        }
-
-                        // Delete button
-                        Button {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: qsTr("Delete")
-                            preferredWidth: Theme.buttonWidthSmall
-                            onClicked: {
-                                var trackId = playlistManager.requestPlaylistItem(model.index)
-                                console.log("Delete confirmed: removing track", trackId)
-                                // Remove silently and update view without triggering full refresh
-                                playlistManager.removeTrack(trackId, true)
-                                root.currentIndex = playlistManager.currentIndex
-                                if (model && typeof model.index !== 'undefined') {
-                                    listModel.remove(model.index)
-                                }
-                                root.filteredCount = Math.max(0, root.filteredCount - 1)
-                                swipeDeleteContainer.showDeleteButton = false
-                                remorseTimer.stop()
-                            }
-                        }
-
-                        Item { width: Theme.paddingMedium; height: 1 }  // Spacer
-
-                        // Countdown timer display
-                        Label {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: Math.max(0, Math.ceil(swipeDeleteContainer.timeLeft / 1000)) + "s"
-                            color: Theme.secondaryHighlightColor
-                            font.pixelSize: Theme.fontSizeLarge
-                            width: Theme.itemSizeExtraSmall
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                    }
-                }
-
-                SilicaFlickable {
-                    id: swipeFlick
-                    anchors.fill: parent
-                    flickableDirection: Flickable.HorizontalFlick
-                    interactive: editMode && !dragActive
-
-                    contentWidth: width * 2
-                    contentHeight: height
-
-                    onMovementEnded: {
-                        if (contentX > width * 0.25) {
-                            // Swiped to the left
-                            console.log("LEFT SWIPE", model.index)
-                            swipeDeleteContainer.timeLeft = 3000
-                            swipeDeleteContainer.showDeleteButton = true
-                            remorseTimer.restart()
-                        }
-
-                        // Reset position
-                        contentX = 0
-                    }
-                }
-
             }
 
             menu: ContextMenu {
