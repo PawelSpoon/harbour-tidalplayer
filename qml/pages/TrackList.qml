@@ -13,9 +13,9 @@ Item {
     property int albumId: -1
     property string type: "current"  // "playlist" oder "current" oder "album" oder "mix" ("tracklist")
     property int currentIndex: playlistManager.currentIndex
-    property alias model: listModel
+    // property alias model: listModel
     property int totalTracks: playlistManager.totalTracks  // For search field visibility
-    
+
     // Edit mode state
     property bool editMode: false
     // True while an item is being dragged/reordered
@@ -24,7 +24,7 @@ Item {
     // Search state - Claude Generated
     property bool searchVisible: false
     property int filteredCount: 0
-    
+
     // Auto-scroll to current track - Claude Generated
     onCurrentIndexChanged: {
         if (editMode) return
@@ -34,7 +34,7 @@ Item {
             autoScrollTimer.restart()
         }
     }
-    
+
     Timer {
         id: autoScrollTimer
         interval: 300  // Delay to ensure ListView is ready
@@ -64,7 +64,7 @@ Item {
             }
         }
     }
-    
+
     Timer {
         id: scrollAnimationTimer
         interval: 450  // Slightly longer than animation duration
@@ -72,7 +72,7 @@ Item {
             tracks.animateScrolling = false
         }
     }
-    
+
     // Filter timer and logic - Claude Generated
     Timer {
         id: filterTimer
@@ -81,7 +81,7 @@ Item {
             refreshList()
         }
     }
-    
+
     Timer {
         id: clearScrollTimer
         interval: 500  // Wait for filter refresh to complete
@@ -95,7 +95,7 @@ Item {
             }
         }
     }
-    
+
     Timer {
         id: autoClearTimer
         interval: 300  // Smooth delay after track selection
@@ -104,10 +104,10 @@ Item {
             searchVisible = false
         }
     }
-    
+
     // Store original playlist data for filtering
     property var originalPlaylistData: []
-    
+
     function refreshList() {
         // Perform an in-place update of `listModel` so we don't clear/recreate
         // delegates. This preserves focus, selection and scroll position.
@@ -196,17 +196,17 @@ Item {
     property real selectedItemHeight: Theme.itemSizeMedium * 1.5 + Theme.paddingMedium
     property int normalFontSize: Theme.fontSizeMedium
     property int selectedFontSize: Theme.fontSizeLarge
-    
+
     property color selectedTextColor: Theme.highlightColor
     property color normalTextColor: Theme.primaryColor
     property color selectedSecondaryColor: Theme.secondaryHighlightColor
     property color normalSecondaryColor: Theme.secondaryColor
     property real highlightOpacity: 0.2
-    
+
     // Create a function to determine if item is selected
     function isItemSelected(index) {
         if (editMode) return false
-        return type === "current" && index === root.currentIndex
+        return type === "current" && index === playlistManager.currentIndex //=== root.currentIndex
     }
 
     Timer {
@@ -255,17 +255,17 @@ Item {
 
         // PERFORMANCE: Virtual scrolling optimizations
         cacheBuffer: Math.max(height * 2, 0)  // Cache 2 screens worth of content, never negative
-        
+
         // Add smooth scrolling properties
         highlightRangeMode: ListView.ApplyRange
         highlightMoveDuration: 1000  // Duration of the scroll animation in milliseconds
         highlightMoveVelocity: -1   // -1 means use duration instead of velocity
         preferredHighlightBegin: height * 0.1
         preferredHighlightEnd: height * 0.9
-        
+
         // Conditional smooth animated scrolling - Claude Generated
         property bool animateScrolling: false
-        
+
         Behavior on contentY {
             enabled: tracks.animateScrolling
             NumberAnimation {
@@ -281,7 +281,6 @@ Item {
             active: (type==="current" && editMode )? true:false
             handleMove: false // We handle the move ourselves
             property int dragStartIndex : -1
-            // parent: parent // does not prevent [W] unknown:17 - file:///usr/share/harbour-tidalplayer/qml/modules/Opal/DragDrop/DragHandle.qml:17: TypeError: Cannot read property of nu
 
             onItemMoved: function(from, to) {
                 console.log("itemMoved - from " + from + " to " + to + ", dragStartIndex= " + dragStartIndex)
@@ -290,7 +289,7 @@ Item {
                     dragActive = true
                 }
             }
-            
+
             onItemDropped: function(from, curr, to) {
                 console.log("Drag-drop operation: originalIndex=", from, "currentIndex=", curr, "finalIndex=", to, "stardIndex=",dragStartIndex)
                 if (from !== to && type === "current") {
@@ -306,7 +305,7 @@ Item {
                 dragActive = false
             }
         }
-        
+
         header: root.title === "" ? null : headerComponent
 
         Component {
@@ -316,7 +315,6 @@ Item {
                 title: root.title
             }
         }
-
 
         height: parent.height
         contentHeight: listModel.count * root.normalItemHeight
@@ -347,8 +345,7 @@ Item {
             id: listEntry
             width: parent.width
             contentHeight: isItemSelected(model.index) ? root.selectedItemHeight : root.normalItemHeight
-            highlighted: isItemSelected(model.index)
-
+            highlighted: !root.editMode && (index === playlistManager.currentIndex)
             // Register the drag handler in the delegate.
             dragHandler: viewDragHandler1
             // Ensure drag handle is visible and properly configured
@@ -366,7 +363,7 @@ Item {
                 Behavior on width { NumberAnimation { duration: 150 } }
                 }
 
-            rightItem: 
+            rightItem:
                    Label {
                     visible: listEntry.highlighted
                     text: "▶"
@@ -400,7 +397,7 @@ Item {
                     playlistManager.playPosition(Math.floor(model.index))  // Stelle sicher, dass es ein Integer ist
                 } else {
                     playlistManager.playTrack(model.trackid)
-                }                
+                }
                 // Auto-clear search with smooth delay if only one result - Claude Generated
                 if (type === "current" && searchVisible && root.filteredCount === 1) {
                     if (applicationWindow.settings.debugLevel >= 1) {
@@ -450,7 +447,7 @@ Item {
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     anchors.left: parent.left
-                    anchors.leftMargin: listEntry.leftItem.Image.width
+                    anchors.leftMargin: listEntry.leftItem.width
                     anchors.right: parent.right
                     color: Theme.rgba(Theme.highlightBackgroundColor, 0.9)
                     visible: swipeDeleteContainer.showDeleteButton
@@ -593,7 +590,7 @@ Item {
                                  } else {
                                     model.index = newIndex
                                     currentIndex = newIndex
-                                    playlistManager.setTrack(newIndex)  
+                                    playlistManager.setTrack(newIndex)
                                 }
                             }
                             // no action needed for removal after current track
@@ -611,7 +608,7 @@ Item {
                         }
                         else {
                             trackId = model.trackid
-                        }                        
+                        }
                         var trackInfo = cacheManager.getTrackInfo(trackId)
                         if (trackInfo && trackInfo.artistid) {
                             pageStack.push(Qt.resolvedUrl("./ArtistPage.qml"),
@@ -652,7 +649,7 @@ Item {
         VerticalScrollDecorator {}
     }
 
-    
+
     // Floating search overlay for current playlist - Claude Generated
     Rectangle {
         id: searchOverlay
@@ -662,40 +659,40 @@ Item {
         color: Theme.rgba(Theme.overlayBackgroundColor, 0.9)
         visible: type === "current" && root.totalTracks > 0
         z: 100  // Above ListView
-        
+
         // Smooth slide animation from top
         y: searchVisible ? 0 : -height
-        
+
         Behavior on y {
             NumberAnimation {
                 duration: 250
                 easing.type: Easing.OutQuad
             }
         }
-        
+
         // Fade animation
         opacity: searchVisible ? 1.0 : 0.0
-        
+
         Behavior on opacity {
             NumberAnimation {
                 duration: 200
                 easing.type: Easing.InOutQuad
             }
         }
-        
+
         SearchField {
             id: searchField
             anchors.centerIn: parent
             anchors.rightMargin: Theme.paddingLarge * 2
             width: parent.width - Theme.paddingLarge * 4
             placeholderText: qsTr("Search in playlist...")
-            
+
             onTextChanged: {
                 if (applicationWindow.settings.debugLevel >= 2) {
                     console.log("SEARCH: Text changed to:", text)
                 }
                 filterTimer.restart()
-                
+
                 // Auto-scroll to current track when text is completely cleared - Claude Generated
                 if (text === "" && type === "current" && root.currentIndex >= 0) {
                     // Delay scroll until after filter refresh
@@ -704,7 +701,7 @@ Item {
             }
         }
 
-        
+
         // Close button
         IconButton {
             anchors.right: parent.right
@@ -725,7 +722,7 @@ Item {
             }
         }
     }
-    
+
     // Search toggle button - Claude Generated
     IconButton {
         id: searchButton
@@ -736,35 +733,35 @@ Item {
         icon.source: "image://theme/icon-m-search"
         visible: type === "current" && root.totalTracks > 0
         z: 99
-        
+
         // Smooth fade animation
         opacity: searchVisible ? 0.0 : 1.0
         enabled: !searchVisible
-        
+
         Behavior on opacity {
             NumberAnimation {
                 duration: 200
                 easing.type: Easing.InOutQuad
             }
         }
-        
+
         // Scale animation on press
         scale: pressed ? 0.9 : 1.0
-        
+
         Behavior on scale {
             NumberAnimation {
                 duration: 100
                 easing.type: Easing.OutQuad
             }
         }
-        
+
         onClicked: {
             searchVisible = true
             // Delay focus until animation starts
             focusTimer.start()
         }
     }
-    
+
     IconButton {
         id: editButton
         anchors.top: searchButton.bottom
@@ -815,7 +812,7 @@ Item {
         }
     }
 
-    
+
     Connections {
         target: tidalApi
         onPlaylistTrackAdded: {
@@ -856,7 +853,7 @@ Item {
                     "image": track_info.image
                 })
             }
-        }        
+        }
 
         onTopTracksofArtist: {
             if (type === "tracklist") {

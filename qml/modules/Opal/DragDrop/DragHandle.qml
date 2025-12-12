@@ -11,17 +11,17 @@ property int verticalAlignment:Qt.AlignCenter
 property int verticalPadding:Theme.paddingMedium
 property bool showActiveArea:false
 property bool highlighted:false
-visible:!!moveHandler&&moveHandler.active
+visible: moveHandler && moveHandler.active
 implicitWidth:visible?Theme.itemSizeMedium:0
 implicitHeight:visible?Theme.itemSizeSmall-2*Theme.paddingMedium:0
-anchors.verticalCenter:parent.verticalCenter
+anchors.verticalCenter: parent ? parent.verticalCenter: undefined
 MouseArea{id:area
 anchors.fill:parent
 enabled:root.visible
 onPressed:moveHandler._startDrag()
 onReleased:moveHandler._stopDrag()
 onCanceled:moveHandler._stopDrag()
-drag.target:!!moveHandler?(moveHandler.dragging?moveHandler._draggableItem:null):null
+drag.target:moveHandler?(moveHandler.dragging?moveHandler._draggableItem:null):null
 drag.axis:Drag.YAxis
 }HighlightImage{id:image
 anchors{right:parent.right
