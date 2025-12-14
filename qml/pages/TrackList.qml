@@ -7,11 +7,19 @@ import "../modules/Opal/DragDrop" 1.0 as Drag
 Item {
     id: root
 
-    // Properties für verschiedene Verwendungszwecke
+
     property string title: ""
     property string playlistId: ""
     property int albumId: -1
+
     property string type: "current"  // "playlist" oder "current" oder "album" oder "mix" ("tracklist")
+
+    // string playlist type “constants”
+    readonly property string current: "current"
+    readonly property string mix: "mix"
+    readonly property string playlist: "playlist"
+    readonly property string album: "album"
+
     property int currentIndex: playlistManager.currentIndex
     // property alias model: listModel
     property int totalTracks: playlistManager.totalTracks  // For search field visibility
@@ -28,7 +36,8 @@ Item {
     // Auto-scroll to current track - Claude Generated
     onCurrentIndexChanged: {
         if (editMode) return
-        if (type === "current" && currentIndex >= 0 && currentIndex < listModel.count) {
+        if (type != current) return // it would be nice to show the info on artist / album page but only when it would really correlate, which is currently not the case
+        if (type === currentIndex >= 0 && currentIndex < listModel.count) {
             // Use timer to ensure ListView is ready
             autoScrollTimer.targetIndex = currentIndex
             autoScrollTimer.restart()
@@ -86,7 +95,7 @@ Item {
         id: clearScrollTimer
         interval: 500  // Wait for filter refresh to complete
         onTriggered: {
-            if (type === "current" && root.currentIndex >= 0) {
+            if (type === current && root.currentIndex >= 0) {
                 autoScrollTimer.targetIndex = root.currentIndex
                 autoScrollTimer.restart()
                 if (applicationWindow.settings.debugLevel >= 1) {
@@ -111,7 +120,7 @@ Item {
     function refreshList() {
         // Perform an in-place update of `listModel` so we don't clear/recreate
         // delegates. This preserves focus, selection and scroll position.
-        if (type !== "current") {
+        if (type !== current) {
             // Keep previous behavior for non-current lists
             updateTimer.start()
             return
@@ -206,7 +215,8 @@ Item {
     // Create a function to determine if item is selected
     function isItemSelected(index) {
         if (editMode) return false
-        return type === "current" && index === playlistManager.currentIndex //=== root.currentIndex
+        if (type != current) return
+        return index === playlistManager.currentIndex //=== root.currentIndex
     }
 
     Timer {
@@ -278,7 +288,7 @@ Item {
         Drag.ViewDragHandler {
             id: viewDragHandler1
             listView: parent
-            active: (type==="current" && editMode )? true:false
+            active: (type === current && editMode )? true:false
             handleMove: false // We handle the move ourselves
             property int dragStartIndex : -1
 
@@ -292,7 +302,7 @@ Item {
 
             onItemDropped: function(from, curr, to) {
                 console.log("Drag-drop operation: originalIndex=", from, "currentIndex=", curr, "finalIndex=", to, "stardIndex=",dragStartIndex)
-                if (from !== to && type === "current") {
+                if (from !== to && type === current) {
                     console.log("Calling moveTrack with from=", from, "to=", to)
                     // Call the moveTrack function in PlaylistManager
                     listModel.move(dragStartIndex, to, 1)
@@ -349,7 +359,7 @@ Item {
             // Register the drag handler in the delegate.
             dragHandler: viewDragHandler1
             // Ensure drag handle is visible and properly configured
-            enableDefaultGrabHandle: type === "current" && editMode
+            enableDefaultGrabHandle: type === current && editMode
 
             // Cover image
             leftItem: Image {
@@ -430,13 +440,13 @@ Item {
                 if (editMode) return
 
                 // Play track first
-                if (type === "current") {
+                if (type === current) {
                     playlistManager.playPosition(Math.floor(model.index))  // Stelle sicher, dass es ein Integer ist
                 } else {
                     playlistManager.playTrack(model.trackid)
                 }
                 // Auto-clear search with smooth delay if only one result - Claude Generated
-                if (type === "current" && searchVisible && root.filteredCount === 1) {
+                if (type === current && searchVisible && root.filteredCount === 1) {
                     if (applicationWindow.settings.debugLevel >= 1) {
                         console.log("SEARCH: Auto-clearing search - single result selected")
                     }
@@ -449,7 +459,7 @@ Item {
                 MenuItem {
                     text: qsTr("Play Now")
                     onClicked: {
-                        if (type === "current") {
+                        if (type === current) {
                             playlistManager.playPosition(Math.floor(model.index))  // Stelle sicher, dass es ein Integer ist
                         } else {
                             playlistManager.playTrack(model.trackid)
@@ -461,7 +471,7 @@ Item {
                     onClicked: {
                         playlistManager.appendTrack(model.trackid)
                     }
-                    visible: type !== "current"
+                    visible: type !== current
                 }
                 MenuItem {
                     text: qsTr("Remove from Queue")
@@ -473,7 +483,7 @@ Item {
                         var removingSelected = currentIndex === model.index
                         console.log("removingPrevTrack:",orgIndex)
                         playlistManager.removeTrack(orgTrackId)
-                        if (type === "current") {
+                        if (type === current) {
                             if (playlistManager.size === 0) {
                                 playlistManager.playlistFinished()
                                 return
@@ -502,14 +512,14 @@ Item {
                             // no action needed for removal after current track
                         }
                     }
-                    visible: type === "current"
+                    visible: type === current
                 }
                 MenuItem {
                     // get artistInfo
                     text: qsTr("Artist Info")
                     onClicked: {
                         var trackId
-                        if (type === "current") {
+                        if (type === current) {
                             trackId = playlistManager.requestPlaylistItem(model.index)
                         }
                         else {
@@ -527,7 +537,7 @@ Item {
                     text: qsTr("Album Info")
                     onClicked: {
                         var trackId
-                        if (type === "current") {
+                        if (type === current) {
                             trackId = playlistManager.requestPlaylistItem(model.index)
                         }
                         else {
@@ -563,7 +573,7 @@ Item {
         anchors.right: parent.right
         height: searchField.height + Theme.paddingMedium * 2
         color: Theme.rgba(Theme.overlayBackgroundColor, 0.9)
-        visible: type === "current" && root.totalTracks > 0
+        visible: type === current && root.totalTracks > 0
         z: 100  // Above ListView
 
         // Smooth slide animation from top
@@ -600,7 +610,7 @@ Item {
                 filterTimer.restart()
 
                 // Auto-scroll to current track when text is completely cleared - Claude Generated
-                if (text === "" && type === "current" && root.currentIndex >= 0) {
+                if (text === "" && type === current && root.currentIndex >= 0) {
                     // Delay scroll until after filter refresh
                     clearScrollTimer.restart()
                 }
@@ -618,7 +628,7 @@ Item {
                 searchField.text = ""
                 searchVisible = false
                 // Auto-scroll to current track when search is cleared - Claude Generated
-                if (type === "current" && root.currentIndex >= 0) {
+                if (type === current && root.currentIndex >= 0) {
                     autoScrollTimer.targetIndex = root.currentIndex
                     autoScrollTimer.restart()
                     if (applicationWindow.settings.debugLevel >= 1) {
@@ -637,7 +647,7 @@ Item {
         anchors.rightMargin: Theme.paddingLarge
         anchors.bottomMargin: Theme.paddingLarge * 3
         icon.source: "image://theme/icon-m-search"
-        visible: type === "current" && root.totalTracks > 0
+        visible: type === current && root.totalTracks > 0
         z: 99
 
         // Smooth fade animation
@@ -679,7 +689,7 @@ Item {
             ? "image://theme/icon-m-file-audio"      // exit edit mode
             : "image://theme/icon-m-edit"      // enter edit mode
 
-        visible: type === "current"
+        visible: type === current
         z: 99
 
         // Simple fade-in/out, consistent with search button
@@ -779,7 +789,7 @@ Item {
         target: playlistManager
         onTrackInformation: {
             // For current playlist, this is handled by onListChanged -> refreshList() to avoid duplicates
-            if (type !== "current") {
+            if (type !== current) {
                 listModel.append({
                     "title": title,
                     "artist": artist,
@@ -794,7 +804,7 @@ Item {
 
         onCurrentTrack: {
             // Avoid auto-scrolling while user is actively dragging/reordering
-            if (type === "current") {
+            if (type === current) {
                 if (dragActive) {
                     if (applicationWindow.settings.debugLevel >= 2) {
                         console.log("TRACKLIST: Skipping onCurrentTrack auto-scroll because drag is active")
@@ -807,14 +817,14 @@ Item {
 
         onClearList: {
             console.log("Playlist must be cleared")
-            if (type === "current") {
+            if (type === current) {
                 listModel.clear()
             }
         }
 
         onListChanged: {
             console.log("update playlist")
-            if (type === "current") {
+            if (type === current) {
                 console.log("update current playlist")
                 // Use refreshList() to maintain search/filter functionality
                 refreshList()
