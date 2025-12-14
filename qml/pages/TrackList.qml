@@ -212,8 +212,6 @@ Item {
     property color selectedSecondaryColor: Theme.secondaryHighlightColor
     property color normalSecondaryColor: Theme.secondaryColor
     property real highlightOpacity: 0.2
-
-    property bool itemSelected: !root.editMode && root.type === root.current && model.index === playlistManager.currentIndex
     
     onTypeChanged: {
         console.log("onTypeChanged: ", type)
@@ -360,6 +358,10 @@ Item {
             dragHandler: viewDragHandler1
             // Ensure drag handle is visible and properly configured
             enableDefaultGrabHandle: type === current && editMode
+
+            property bool itemSelected: !root.editMode
+                && root.type === root.current
+                && model.index === playlistManager.currentIndex
 
             // Cover image
             leftItem: Image {
