@@ -111,6 +111,13 @@ DockedPanel {
                         playerState = 1  // Normal -> Mini
                     }
                 }
+                else
+                {
+                    while (pageStack.depth > 1) {
+                        pageStack.pop(null, PageStackAction.Immediate)
+                    }
+                    applicationWindow.mainPage.showPlaylist()
+                }
             }
         }
 
