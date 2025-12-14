@@ -18,7 +18,8 @@ Item {
     readonly property string current: "current"
     readonly property string mix: "mix"
     readonly property string playlist: "playlist"
-    readonly property string album: "album"
+    readonly property string album: "album"         // album
+    readonly property string tracklist: "tracklist" // artist-page top - tracks
 
     property int currentIndex: playlistManager.currentIndex
     // property alias model: listModel
@@ -212,11 +213,10 @@ Item {
     property color normalSecondaryColor: Theme.secondaryColor
     property real highlightOpacity: 0.2
 
-    // Create a function to determine if item is selected
-    function isItemSelected(index) {
-        if (editMode) return false
-        if (type != current) return
-        return index === playlistManager.currentIndex //=== root.currentIndex
+    property bool itemSelected: !root.editMode && root.type === root.current && model.index === playlistManager.currentIndex
+    
+    onTypeChanged: {
+        console.log("onTypeChanged: ", type)
     }
 
     Timer {
@@ -327,7 +327,7 @@ Item {
         }
 
         height: parent.height
-        contentHeight: listModel.count * root.normalItemHeight
+        // contentHeight: listModel.count * root.normalItemHeight
         bottomMargin: Theme.paddingLarge
 
         clip: true  // prevents visual overruns
@@ -342,9 +342,9 @@ Item {
                         tidalApi.playPlaylist(playlistId)
                     }
                 }
-                visible: type === "playlist"
+                visible: type === playlist
             }
-            visible: type === "playlist"
+            visible: type === playlist
         }
 
         model: ListModel {
@@ -354,8 +354,8 @@ Item {
         delegate: Del.TwoLineDelegate { //ListItem {
             id: listEntry
             width: parent.width
-            contentHeight: isItemSelected(model.index) ? root.selectedItemHeight : root.normalItemHeight
-            highlighted: !root.editMode && (index === playlistManager.currentIndex)
+            contentHeight: itemSelected ? root.selectedItemHeight : root.normalItemHeight
+            highlighted: itemSelected // !root.editMode && (index === playlistManager.currentIndex)
             // Register the drag handler in the delegate.
             dragHandler: viewDragHandler1
             // Ensure drag handle is visible and properly configured
@@ -388,8 +388,8 @@ Item {
                 // primaryColor: normalColor
                 // highlightedColor: highlightColor
             }
-            textLabel.font.bold: isItemSelected(model.index)
-            textLabel.highlighted: isItemSelected(model.index)
+            textLabel.font.bold: itemSelected
+            textLabel.highlighted: itemSelected
 
             text: model.title
             description: { 
@@ -531,6 +531,7 @@ Item {
                                 { artistId: trackInfo.artistid })
                         }
                     }
+                    visible: type != tracklist
                 }
                 MenuItem {
                     // get albumInfo
@@ -549,6 +550,7 @@ Item {
                                 { albumId: trackInfo.albumid })
                         }
                     }
+                    visible: type != album
                 }
             }
 
@@ -732,7 +734,7 @@ Item {
     Connections {
         target: tidalApi
         onPlaylistTrackAdded: {
-            if (type === "playlist") {
+            if (type === playlist) {
                 listModel.append({
                     "title": track_info.title,
                     "artist": track_info.artist,
@@ -745,7 +747,7 @@ Item {
         }
 
         onAlbumTrackAdded: {
-            if (type === "album") {
+            if (type === album) {
                 listModel.append({
                     "title": track_info.title,
                     "artist": track_info.artist,
@@ -759,7 +761,7 @@ Item {
 
         onMixTrackAdded: {
             //console.log("Mix track added")
-            if (type === "mix") {
+            if (type === mix) {
                 listModel.append({
                     "title": track_info.title,
                     "artist": track_info.artist,
@@ -772,7 +774,7 @@ Item {
         }
 
         onTopTracksofArtist: {
-            if (type === "tracklist") {
+            if (type === tracklist) {
                 listModel.append({
                     "title": track_info.title,
                     "artist": track_info.artist,
