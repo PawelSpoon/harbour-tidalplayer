@@ -286,7 +286,7 @@ Page {
                 id: trackList
                 width: parent.width
                 height: albumPage.height -  y - (minPlayerPanel.open ? minPlayerPanel.height*0.6 : 0)
-                type: "album"
+                type: trackList.album
                 albumId: albumPage.albumId
             }
         }

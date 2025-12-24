@@ -10,13 +10,39 @@ Page {
 
     // The effective value will be restricted by ApplicationWindow.allowedOrientations
     allowedOrientations: Orientation.All
+    property bool isPortrait: orientation === Orientation.Portrait
+    property bool isLandscapeLeft: orientation === Orientation.Landscape
+    property bool isLandscapeRight: orientation === Orientation.LandscapeInverted    
+
     property int currentIndex : 0
-    // To enable PullDownMenu, place our content in a SilicaFlickable
 
     function showPlaylist() {
         swipeView.currentIndex = 2
     }
 
+    function getLeftOffset()
+    {
+      if (firstPage.isPortrait)
+          return 0
+      if (isLandscapeRight) {
+        if (miniPlayerPanel.open)
+            return ( 1.2 * miniPlayerPanel.height )
+        return miniPlayerPanel.height * 0.4
+      }
+    }
+
+    function getRightOffset()
+    {
+      if (firstPage.isPortrait)
+          return 0
+      if (isLandscapeLeft) {
+        if (miniPlayerPanel.open)
+            return ( 1.2 * miniPlayerPanel.height )
+        return miniPlayerPanel.height * 0.4
+      }
+    }    
+
+    // To enable PullDownMenu, place our content in a SilicaFlickable
     SilicaFlickable {
         id: flickable
         anchors {
@@ -102,7 +128,9 @@ Page {
 
             anchors {
                 left: parent.left
+                leftMargin: getLeftOffset()
                 right: parent.right
+                rightMargin: getRightOffset()
                 top: parent.top
             }
             iconArray: ["image://theme/icon-m-home", "image://theme/icon-m-search", "image://theme/icon-m-media-playlists"]
@@ -118,14 +146,20 @@ Page {
 
                   function getBottomOffset()
                   {
-                      if (miniPlayerPanel.open) return ( 1.2 * miniPlayerPanel.height )
-                      return miniPlayerPanel.height * 0.4
+                    if (!firstPage.isPortrait)
+                        return 0
+
+                    if (miniPlayerPanel.open) 
+                        return ( 1.2 * miniPlayerPanel.height )
+                    return miniPlayerPanel.height * 0.4
                   }
 
                   anchors.top: mainPageHeader.bottom
                   anchors.topMargin: Theme.paddingLarge
                   anchors.left: parent.left
+                  anchors.leftMargin : getLeftOffset()
                   anchors.right: parent.right
+                  anchors.rightMargin: getRightOffset()
                   anchors.bottom: parent.bottom
                   anchors.bottomMargin: getBottomOffset()
                   property var carouselPages: [
